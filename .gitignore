@@ -1,0 +1,5 @@
+ext/miniball_ruby/*.o
+ext/miniball_ruby/*.so
+ext/miniball_ruby/Makefile
+pkg
+tmp
