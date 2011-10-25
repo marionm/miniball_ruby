@@ -17,8 +17,8 @@ Result* ConstructResult() {
 }
 
 void MarkResult(Result* r) {
-  ruby_gc_mark(r->center);
-  ruby_gc_mark(r->radius_squared);
+  rb_gc_mark(r->center);
+  rb_gc_mark(r->radius_squared);
 }
 
 void DestroyResult(Result* r) {
