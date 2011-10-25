@@ -1,5 +1,8 @@
 ext/miniball_ruby/*.o
 ext/miniball_ruby/*.so
 ext/miniball_ruby/Makefile
+
+test/data/generation/generator
+
 pkg
 tmp

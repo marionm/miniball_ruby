@@ -14,4 +14,6 @@ Gem::Specification.new do |s|
 
   s.files = Dir.glob('lib/**/*.rb')
   s.extensions = ['ext/miniball_ruby/extconf.rb']
+
+  s.add_development_dependency 'yajl-ruby'
 end
