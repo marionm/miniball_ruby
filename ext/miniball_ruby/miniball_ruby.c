@@ -1,19 +1,36 @@
-//TODO: Massive cleanup needed
-//FIXME: Calculate currently segfaults with fewer than 2 points - fix
+//TODO: Can push some more c ruby into this (and dependencies), like ALLOC
+
 #include "ruby.h"
+#include "util.h"
+#include "point_dynamic_d.h"
+#include "miniball_builder_dynamic_d.h"
 #include "miniball_dynamic_d.h"
 
-VALUE Miniball_c;
-VALUE Miniball_result;
+//
+// Calculation result structue and accessors
+//
+
+VALUE MiniballResult;
+
+typedef struct Result Result;
 
 struct Result {
   VALUE center;
   VALUE radius_squared;
 };
-typedef struct Result Result;
 
-Result* ConstructResult() {
-  return malloc(sizeof(Result));
+Result* ConstructResult(int dim, double* center, double radius_squared) {
+  Result* r = malloc(sizeof(Result));
+
+  r->center = rb_ary_new2(dim);
+  int i;
+  for(i = 0; i < dim; ++i) {
+    rb_ary_store(r->center, i, rb_float_new(center[i]));
+  }
+
+  r->radius_squared = rb_float_new(radius_squared);
+
+  return r;
 }
 
 void MarkResult(Result* r) {
@@ -23,49 +40,6 @@ void MarkResult(Result* r) {
 
 void DestroyResult(Result* r) {
   free(r);
-}
-
-static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = Qfalse) {
-  int dim = RARRAY_LEN(rb_ary_entry(points, 0));
-
-  //TODO: Be more type safe
-  Miniball* m = ConstructMiniball(dim);
-
-  int i, j;
-  int len =  RARRAY_LEN(points);
-  for(i = 0; i < len; ++i) {
-    //TODO: Check that point length matches dim
-    VALUE point = rb_ary_entry(points, i);
-    Point* p = ConstructPoint(dim);
-    for(j = 0; j < dim; ++j) {
-      p->coord[j] = NUM2DBL(rb_ary_entry(point, j));
-    }
-    Miniball_check_in(m, p);
-  }
-
-  Miniball_build(m);
-
-  Point* center = Miniball_center(m);
-  double sqr_radius = Miniball_squared_radius(m);
-  //TODO: Support points
-
-  if(0) { //if with_analytics
-    //TODO: Accuracy, validity, and slack as optional calcs
-  }
-
-  DestroyMiniball(m);
-
-  //TODO: Push some of this into the constructor
-  Result* r = ConstructResult(dim);
-  r->center = rb_ary_new2(dim);
-  long l;
-  for(i = 0, l = 0; i < dim; ++i, ++l) {
-    rb_ary_store(r->center, l, rb_float_new(center->coord[i]));
-  }
-  r->radius_squared = rb_float_new(sqr_radius);
-  VALUE result = Data_Wrap_Struct(Miniball_result, MarkResult, DestroyResult, r);
-
-  return result;
 }
 
 VALUE center(VALUE self) {
@@ -80,12 +54,62 @@ VALUE radius_squared(VALUE self) {
   return r->radius_squared;
 }
 
-void Init_miniball_ruby() {
-  Miniball_c = rb_define_module("MiniballC");
-  rb_define_method(Miniball_c, "calc", calc, 1);
 
-  Miniball_result = rb_define_class("MiniballResult", rb_cObject);
-  rb_define_method(Miniball_result, "center", center, 0);
-  rb_define_method(Miniball_result, "radius_squared", radius_squared, 0);
+
+//
+// Calculation methods
+//
+
+VALUE MiniballC;
+
+static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) {
+  int dim = RARRAY_LEN(rb_ary_entry(points, 0));
+
+  //TODO: Be more type safe
+  Miniball* m = Miniball_create(dim);
+
+  int i, j;
+  int len =  RARRAY_LEN(points);
+  for(i = 0; i < len; ++i) {
+    //TODO: Check that point length matches dim
+    VALUE point = rb_ary_entry(points, i);
+    Point* p = Point_create(dim);
+    for(j = 0; j < dim; ++j) {
+      p->coord[j] = NUM2DBL(rb_ary_entry(point, j));
+    }
+    Miniball_check_in(m, p);
+  }
+
+  Miniball_build(m);
+
+  Point* center = Miniball_center(m);
+  double radius_squared = Miniball_squared_radius(m);
+  //TODO: Support points
+
+  if(0) { //if with_analytics
+    //TODO: Accuracy, validity, and slack as optional calcs
+  }
+
+  Miniball_destroy(m);
+
+  Result* r = ConstructResult(dim, center->coord, radius_squared);
+  VALUE result = Data_Wrap_Struct(MiniballResult, MarkResult, DestroyResult, r);
+
+  return result;
+}
+
+
+
+//
+// Ruby init
+//
+
+void Init_miniball_ruby() {
+  MiniballC = rb_define_module("MiniballC");
+  rb_define_method(MiniballC, "calc", calc, 1);
+
+  MiniballResult = rb_define_class("MiniballResult", rb_cObject);
+  rb_define_method(MiniballResult, "center", center, 0);
+  rb_define_method(MiniballResult, "radius_squared", radius_squared, 0);
 }
 
