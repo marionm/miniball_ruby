@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.description = %q{This gem finds minimum bounding spheres of a set of points.
                      It is a port of Bernd Gaertner's C++ miniball library.}
 
-  s.files = Dir.glob('lib/**/*.rb')
+  s.files = Dir.glob('lib/**/*.rb') + Dir.glob('ext/**/*')
   s.extensions = ['ext/miniball_ruby/extconf.rb']
 
   s.add_development_dependency 'yajl-ruby'
