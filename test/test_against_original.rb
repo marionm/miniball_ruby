@@ -42,11 +42,4 @@ class ComparisonTest < Test::Unit::TestCase
       end
     end
   end
-
-  #TODO: Write these
-  def test_edge_cases
-    #Empty set
-    #Single point
-    #Mixed dimension (error case)
-  end
 end

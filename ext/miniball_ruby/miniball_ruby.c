@@ -63,16 +63,25 @@ VALUE radius_squared(VALUE self) {
 VALUE MiniballC;
 
 static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) {
+  Check_Type(points, T_ARRAY);
+  if(RARRAY_LEN(points) == 0) {
+    rb_raise(rb_eArgError, "Must have at least one point");
+  }
+
+  Check_Type(rb_ary_entry(points, 0), T_ARRAY);
   int dim = RARRAY_LEN(rb_ary_entry(points, 0));
 
-  //TODO: Be more type safe
   Miniball* m = Miniball_create(dim);
 
   int i, j;
   int len =  RARRAY_LEN(points);
   for(i = 0; i < len; ++i) {
-    //TODO: Check that point length matches dim
     VALUE point = rb_ary_entry(points, i);
+    Check_Type(point, T_ARRAY);
+    if(RARRAY_LEN(point) != dim) {
+      rb_raise(rb_eArgError, "Point dimensions must be consistent");
+    }
+
     Point* p = Point_create(dim);
     for(j = 0; j < dim; ++j) {
       p->coord[j] = NUM2DBL(rb_ary_entry(point, j));

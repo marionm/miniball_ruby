@@ -7,9 +7,7 @@ struct Point {
   int d;
   double* coord;
 
-  //Points can be used as inline lists
-  //Manual frees are required for list
-  //TODO: How badly does this suck?
+  //Points can be used as doubly-linked lists (must free manually)
   Point* prev;
   Point* next;
 };

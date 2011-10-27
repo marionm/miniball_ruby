@@ -202,6 +202,6 @@ double Miniball_accuracy(Miniball* m, double* slack) {
 }
 
 int Miniball_is_valid(Miniball* m, double tolerance) {
- double slack;
- return ((Miniball_accuracy(m, &slack) < tolerance) && (slack == 0));
+  double slack;
+  return ((Miniball_accuracy(m, &slack) < tolerance) && (slack == 0));
 }
