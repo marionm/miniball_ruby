@@ -32,15 +32,20 @@ class ComparisonTest < Test::Unit::TestCase
         exp = @expectations[i]
         miniball = Miniball.new(points)
 
+        miniball.calculate true
+
         assert_point_in_delta exp['center'], miniball.center
         assert_in_delta exp['squared_radius'], miniball.radius_squared, @delta
         assert_in_delta exp['squared_radius'] ** 0.5, miniball.radius, @delta
+
         exp['support_points'].each_with_index do |exp_support_point, i|
           assert_point_in_delta exp_support_point, miniball.support_points[i]
         end
-        #TODO: Optional output
+
+        assert_in_delta exp['accuracy'], miniball.accuracy, @delta
+        assert_in_delta exp['slack'], miniball.slack, @delta
       rescue => e
-        raise "Failure on input #{i}: #{e.message}"
+        raise "Failure on input #{i}: #{e.message}\n#{e.backtrace.join("\n")}"
       end
     end
   end

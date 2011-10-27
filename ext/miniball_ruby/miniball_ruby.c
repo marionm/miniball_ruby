@@ -18,6 +18,8 @@ struct Result {
   VALUE center;
   VALUE radius_squared;
   VALUE support_points;
+  VALUE accuracy;
+  VALUE slack;
 };
 
 Result* ConstructResult(int dim, double* center, double radius_squared) {
@@ -31,6 +33,10 @@ Result* ConstructResult(int dim, double* center, double radius_squared) {
 
   r->radius_squared = rb_float_new(radius_squared);
 
+  r->support_points = Qnil;
+  r->accuracy = Qnil;
+  r->slack = Qnil;
+
   return r;
 }
 
@@ -38,6 +44,8 @@ void MarkResult(Result* r) {
   rb_gc_mark(r->center);
   rb_gc_mark(r->radius_squared);
   rb_gc_mark(r->support_points);
+  rb_gc_mark(r->accuracy);
+  rb_gc_mark(r->slack);
 }
 
 void DestroyResult(Result* r) {
@@ -62,6 +70,18 @@ VALUE support_points(VALUE self) {
   return r->support_points;
 }
 
+VALUE accuracy(VALUE self) {
+  Result* r;
+  Data_Get_Struct(self, Result, r);
+  return r->accuracy;
+}
+
+VALUE slack(VALUE self) {
+  Result* r;
+  Data_Get_Struct(self, Result, r);
+  return r->slack;
+}
+
 
 
 //
@@ -70,7 +90,7 @@ VALUE support_points(VALUE self) {
 
 VALUE MiniballC;
 
-static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) {
+static VALUE calc(VALUE self, VALUE points, VALUE with_analytics) {
   Check_Type(points, T_ARRAY);
   if(RARRAY_LEN(points) == 0) {
     rb_raise(rb_eArgError, "Must have at least one point");
@@ -103,10 +123,6 @@ static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) 
   double radius_squared = Miniball_squared_radius(m);
   //TODO: Support points
 
-  if(0) { //if with_analytics
-    //TODO: Accuracy, validity, and slack as optional calcs
-  }
-
   Result* r = ConstructResult(dim, center->coord, radius_squared);
 
   int support_point_count = Miniball_nr_support_points(m);
@@ -119,6 +135,12 @@ static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) 
       rb_ary_store(point, j, rb_float_new(support_point->coord[j]));
     }
     rb_ary_store(r->support_points, i, point);
+  }
+
+  if(with_analytics) {
+    double slack;
+    r->accuracy = rb_float_new(Miniball_accuracy(m, &slack));
+    r->slack = slack;
   }
 
   VALUE result = Data_Wrap_Struct(MiniballResult, MarkResult, DestroyResult, r);
@@ -135,11 +157,13 @@ static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) 
 
 void Init_miniball_ruby() {
   MiniballC = rb_define_module("MiniballC");
-  rb_define_method(MiniballC, "calc", calc, 1);
+  rb_define_method(MiniballC, "calc", calc, 2);
 
   MiniballResult = rb_define_class("MiniballResult", rb_cObject);
   rb_define_method(MiniballResult, "center", center, 0);
   rb_define_method(MiniballResult, "radius_squared", radius_squared, 0);
   rb_define_method(MiniballResult, "support_points", support_points, 0);
+  rb_define_method(MiniballResult, "accuracy", accuracy, 0);
+  rb_define_method(MiniballResult, "slack", slack, 0);
 }
 

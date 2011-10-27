@@ -9,7 +9,7 @@ class Miniball
   end
 
   def calculate(with_analysis = false)
-    @result ||= calc(@points)
+    @result ||= calc(@points, with_analysis || false)
   end
 
   def center
@@ -26,5 +26,23 @@ class Miniball
 
   def support_points
     calculate.support_points
+  end
+
+  #Must calculate with analytics on to get accuracy or slack
+
+  def accuracy
+    unless @accuracy
+      a = calculate.accuracy
+      @accuracy = a.nan? ? 0.0 : a
+    end
+    @accuracy
+  end
+
+  def slack
+    unless @slack
+      s = calculate.slack
+      @slack = (s == false ? 0.0 : slack)
+    end
+    @slack
   end
 end
