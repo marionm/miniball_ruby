@@ -17,6 +17,7 @@ typedef struct Result Result;
 struct Result {
   VALUE center;
   VALUE radius_squared;
+  VALUE support_points;
 };
 
 Result* ConstructResult(int dim, double* center, double radius_squared) {
@@ -36,6 +37,7 @@ Result* ConstructResult(int dim, double* center, double radius_squared) {
 void MarkResult(Result* r) {
   rb_gc_mark(r->center);
   rb_gc_mark(r->radius_squared);
+  rb_gc_mark(r->support_points);
 }
 
 void DestroyResult(Result* r) {
@@ -52,6 +54,12 @@ VALUE radius_squared(VALUE self) {
   Result* r;
   Data_Get_Struct(self, Result, r);
   return r->radius_squared;
+}
+
+VALUE support_points(VALUE self) {
+  Result* r;
+  Data_Get_Struct(self, Result, r);
+  return r->support_points;
 }
 
 
@@ -99,11 +107,23 @@ static VALUE calc(VALUE self, VALUE points) { //, VALUE with_analytics = false) 
     //TODO: Accuracy, validity, and slack as optional calcs
   }
 
-  Miniball_destroy(m);
-
   Result* r = ConstructResult(dim, center->coord, radius_squared);
+
+  int support_point_count = Miniball_nr_support_points(m);
+  r->support_points = rb_ary_new2(support_point_count);
+
+  Point* support_point = Miniball_support_points_begin(m);
+  for(i = 0; i < support_point_count; i++, support_point = support_point->next) {
+    VALUE point = rb_ary_new2(dim);
+    for(j = 0; j < dim; ++j) {
+      rb_ary_store(point, j, rb_float_new(support_point->coord[j]));
+    }
+    rb_ary_store(r->support_points, i, point);
+  }
+
   VALUE result = Data_Wrap_Struct(MiniballResult, MarkResult, DestroyResult, r);
 
+  Miniball_destroy(m);
   return result;
 }
 
@@ -120,5 +140,6 @@ void Init_miniball_ruby() {
   MiniballResult = rb_define_class("MiniballResult", rb_cObject);
   rb_define_method(MiniballResult, "center", center, 0);
   rb_define_method(MiniballResult, "radius_squared", radius_squared, 0);
+  rb_define_method(MiniballResult, "support_points", support_points, 0);
 }
 

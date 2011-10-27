@@ -35,10 +35,12 @@ class ComparisonTest < Test::Unit::TestCase
         assert_point_in_delta exp['center'], miniball.center
         assert_in_delta exp['squared_radius'], miniball.radius_squared, @delta
         assert_in_delta exp['squared_radius'] ** 0.5, miniball.radius, @delta
-        #TODO: Support points and other output
-      rescue
-        puts "FAILURE: input #{i}"
-        raise
+        exp['support_points'].each_with_index do |exp_support_point, i|
+          assert_point_in_delta exp_support_point, miniball.support_points[i]
+        end
+        #TODO: Optional output
+      rescue => e
+        raise "Failure on input #{i}: #{e.message}"
       end
     end
   end

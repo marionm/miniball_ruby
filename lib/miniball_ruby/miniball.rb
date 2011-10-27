@@ -23,4 +23,8 @@ class Miniball
   def radius_squared
     calculate.radius_squared
   end
+
+  def support_points
+    calculate.support_points
+  end
 end
